@@ -1,6 +1,7 @@
 import ArrowIcon from "@/assets/images/icon-arrow.svg";
-import { useState } from "react";
+import { Fragment, useRef, useState } from "react";
 import { dateDiff, isDayValid, isMonthValid, isYearValid } from "./utils";
+import gsap from "gsap";
 
 type DateType = {
     year?: number;
@@ -14,17 +15,7 @@ export default function App() {
         <main className="w-full min-h-screen bg-c_Off_white flex items-center justify-center md:px-0 px-4">
             <div className="bg-white rounded-3xl md:rounded-br-[10rem] rounded-br-[6rem] font-poppings p-8 py-12 gap-4 flex flex-col md:w-[47rem] w-full">
                 <InputField date={date} setDate={setDate} />
-                <div className="w-full flex items-center md:my-0 my-10">
-                    <div className="h-full flex-grow border-t-[1px] border-c_Light_grey"></div>
-                    <button className="rounded-full transition hover:bg-black bg-c_Purple overflow-hidden md:relative absolute flex items-center justify-center size-[5rem]  md:scale-100 scale-75 md:translate-x-0 translate-x-[-50%] md:left-0 left-[50%]">
-                        <span className="sr-only">calculate</span>
-                        <img
-                            src={ArrowIcon}
-                            alt="arrow"
-                            className="size-[2.5rem]"
-                        />
-                    </button>
-                </div>
+
                 <ResultField date={date} />
             </div>
         </main>
@@ -208,30 +199,75 @@ function ResultField({ date }: { date: DateType }) {
     const dayOK = isDayValid({ d: day, m: month, y: year });
     const monthOK = isMonthValid({ m: month, y: year });
     const yearOK = isYearValid({ y: year });
-    let result: undefined | { years: number; months: number; days: number };
-    if (year && month && day && dayOK && monthOK && yearOK) {
-        result = dateDiff(new Date(year, month -1, day), new Date());
-    }
+
+    const yearRef = useRef<HTMLSpanElement>(null);
+    const monthRef = useRef<HTMLSpanElement>(null);
+    const dayRef = useRef<HTMLSpanElement>(null);
+    const animateNumber = (
+        ref: React.RefObject<HTMLSpanElement>,
+        value: number | undefined
+    ) => {
+        if (value !== undefined && ref.current) {
+            gsap.to(ref.current, {
+                innerText: value,
+                duration: 1,
+                ease: "power1.inOut",
+                snap: { innerText: 1 },
+                onUpdate: () => {
+                    ref.current!.innerText = Math.round(
+                        Number(ref.current!.innerText)
+                    ).toString();
+                },
+            });
+        }
+    };
+    const handleClick = () => {
+        let result: undefined | { years: number; months: number; days: number };
+        if (year && month && day && dayOK && monthOK && yearOK) {
+            result = dateDiff(new Date(year, month - 1, day), new Date());
+        }
+        if (!result) return;
+
+        animateNumber(yearRef, result.years);
+        animateNumber(monthRef, result.months);
+        animateNumber(dayRef, result.days);
+    };
     return (
-        <div className="flex flex-col font-poppings italic font-black text-[3.5rem] md:text-[5rem] leading-[4rem] md:leading-[6.5rem]">
-            <p>
-                <span className="text-c_Purple">
-                    {result && day && month && year ? result.years : "- - "}
-                </span>{" "}
-                years
-            </p>
-            <p>
-                <span className="text-c_Purple">
-                    {result && day && month && year ? result.months : "- - "}
-                </span>{" "}
-                months
-            </p>
-            <p>
-                <span className="text-c_Purple">
-                    {result && day && month && year ? result.days : "- - "}
-                </span>{" "}
-                days
-            </p>
-        </div>
+        <Fragment>
+            <div className="w-full flex items-center md:my-0 my-10">
+                <div className="h-full flex-grow border-t-[1px] border-c_Light_grey"></div>
+                <button
+                    onMouseDown={handleClick}
+                    className="rounded-full transition hover:bg-black bg-c_Purple overflow-hidden md:relative absolute flex items-center justify-center size-[5rem]  md:scale-100 scale-75 md:translate-x-0 translate-x-[-50%] md:left-0 left-[50%]"
+                >
+                    <span className="sr-only">calculate</span>
+                    <img
+                        src={ArrowIcon}
+                        alt="arrow"
+                        className="size-[2.5rem]"
+                    />
+                </button>
+            </div>
+            <div className="flex flex-col font-poppings italic font-black text-[3.5rem] md:text-[5rem] leading-[4rem] md:leading-[6.5rem]">
+                <p>
+                    <span className="text-c_Purple" ref={yearRef}>
+                        - - 
+                    </span>{" "}
+                    years
+                </p>
+                <p>
+                    <span className="text-c_Purple" ref={monthRef}>
+                        - - 
+                    </span>{" "}
+                    months
+                </p>
+                <p>
+                    <span className="text-c_Purple" ref={dayRef}>
+                        - - 
+                    </span>{" "}
+                    days
+                </p>
+            </div>
+        </Fragment>
     );
 }
